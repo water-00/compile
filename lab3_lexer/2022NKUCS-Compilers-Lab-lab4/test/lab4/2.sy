@@ -1,6 +1,6 @@
 // i am a function: this function has many syntax errors.
 
-int f(){
+int f() {
 	int a;
 	a = 0;
 	while (a < 10) {
@@ -11,7 +11,7 @@ int f(){
 	return a;
 }
 
-int main(){
+int main() {
 	int _testid;
 	_testid = 0;
 	if(_testid == 0){

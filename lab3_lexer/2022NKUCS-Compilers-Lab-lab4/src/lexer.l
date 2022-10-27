@@ -25,6 +25,7 @@
     #include <math.h>
     #include <ostream>
     #include <fstream>
+    #include <stack>
     using namespace std;
     extern FILE *yyin; 
     extern FILE *yyout;
@@ -49,15 +50,58 @@
         return result;
     }
 
-    void DEBUG_FOR_LAB4(std::string s){
+    void DEBUG_FOR_LAB4(std::string s, std::string other = ""){
         char* lineno_str = (char *)malloc(11*sizeof(char));
         char* offset_str = (char *)malloc(11*sizeof(char));
         sprintf(lineno_str, "%d", yylineno);
         sprintf(offset_str, "%d", offset);
-        std::string DEBUG_INFO = "[DEBUG LAB4]: \t" + s + "\t" + lineno_str + "\t" + offset_str + "\n";
+        std::string DEBUG_INFO = s + "\t" + lineno_str + "\t" + offset_str + "\t" + other + "\n";
         fputs(DEBUG_INFO.c_str(), yyout);
         free(lineno_str);
     }
+
+    // for SymbolTable
+    
+    class SymbolTable {
+	    private:
+		    vector<pair<string, pair<int, int>>> item;
+
+	    public:
+            int idNum = 0; // how many ids in this table
+
+		    SymbolTable() {}
+            void addItem(string name, int block, int id) {
+                item.push_back(make_pair(name, make_pair(block, id)));
+                idNum++;
+            }
+            string getIdName(int i) {
+                return item.at(i).first;
+            }
+            pair<int, int> getIdIndex() {
+                return item.back().second;
+            }
+            void setIdName(string name) {
+                item.back().first = name;
+            }
+            void setIdIndex(int block, int num) {
+                // in which block, and the order in that block
+                item.back().second = make_pair(block, num);
+            }
+
+            int checkIdName(string str) {
+                for (int i = 0; i < (int)item.size(); i++) {
+                    if (str == getIdName(i)) {
+                        return i + 1; // 在表中找到了，返回它的idNum = 索引值+1,因为idNum从1开始
+                    }
+                }
+                // 如果在这张表中没找到，则返回-1
+                return -1;
+            }
+    };
+    int blockNum = 0; // how many blocks
+    int popNum = 0;
+    vector <SymbolTable> STstack;
+
     #endif
 %}
 
@@ -132,10 +176,11 @@ lineCommentElement .
 "if" {
     #ifdef ONLY_FOR_LEX
         DEBUG_FOR_LAB4("IF\tif");
+        offset += strlen(yytext);
     #else
         return IF;
     #endif
-};
+}
 "else" {
     #ifdef ONLY_FOR_LEX
         DEBUG_FOR_LAB4("ELSE\telse");
@@ -143,7 +188,7 @@ lineCommentElement .
     #else
         return ELSE;
     #endif
-};
+}
 "return" {
     #ifdef ONLY_FOR_LEX
         DEBUG_FOR_LAB4("RETURN\treturn");
@@ -252,6 +297,9 @@ lineCommentElement .
     #ifdef ONLY_FOR_LEX
         DEBUG_FOR_LAB4("LBRACE\t{");
         offset += strlen(yytext);
+        blockNum++;
+        SymbolTable st;
+        STstack.push_back(st); // add a SymbolTable when meeting "{"
     #else
         return LBRACE;
     #endif
@@ -260,6 +308,8 @@ lineCommentElement .
     #ifdef ONLY_FOR_LEX
         DEBUG_FOR_LAB4("RBRACE\t}");
         offset += strlen(yytext);
+        popNum++;
+        STstack.pop_back(); // delete a SymbolTable when meeting "}"
     #else
         return RBRACE;
     #endif
@@ -276,8 +326,39 @@ lineCommentElement .
 {ID} {    
     #ifdef ONLY_FOR_LEX
         char* str = (char *)malloc(255*sizeof(char));
-        sprintf(str, "ID\t%s\t", yytext);
-        DEBUG_FOR_LAB4(str);
+        sprintf(str, "ID\t%s", yytext);
+
+        // 实现符号表功能：
+        int block, idNum;
+        string idPlace = "";
+        if (STstack.empty()) {
+            SymbolTable st;
+            STstack.push_back(st); // 全局变量和全局函数的符号表
+        }
+        // 查找ID是否在任意一符号表中
+        for (block = STstack.size() - 1; block >= 0; block--)
+        {
+            // 从最top的块（也即最top的符号表）开始找
+            idNum = STstack.at(block).checkIdName(str); // 如果找到了<block + popNum, idNum>就是它在最近的符号表中的位置
+            if (idNum != -1)
+            {
+                // 找到了，存储一下便于打印
+                idPlace = "<" + to_string(block + popNum) + ", " + to_string(idNum) + ">";
+                break;
+            }
+            else
+            {
+                continue;
+            }
+        }
+
+	    // 如果遍历所有存在的符号表都没有找到，则它是一个当前符号表的新id，把它添加到当前符号表
+	    STstack.back().addItem(str, blockNum, STstack.back().idNum + 1);
+        if (idPlace == "") {
+            idPlace = "<" + to_string(blockNum) + ", " + to_string(STstack.back().idNum) + ">";
+        }
+        
+        DEBUG_FOR_LAB4(str, idPlace);
         offset += strlen(yytext);
         free(str);
     #else
