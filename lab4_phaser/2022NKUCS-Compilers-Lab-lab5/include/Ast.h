@@ -24,14 +24,24 @@ public:
     ExprNode(SymbolEntry *symbolEntry) : symbolEntry(symbolEntry){};
 };
 
+class UnaryExpr : public ExprNode
+{
+private:
+    int op;
+    ExprNode *expr;
+public:
+    enum {NOT, UNARY_PLUS, UNARY_MINUS};
+    UnaryExpr(SymbolEntry *se, int op, ExprNode* expr) : ExprNode(se), op(op), expr(expr){};
+    void output(int level);
+};
+
 class BinaryExpr : public ExprNode
 {
 private:
     int op;
     ExprNode *expr1, *expr2;
 public:
-    enum {NOT, OR, AND, EQUAL, NOTEQUAL, LESS, LESSEQUAL, GREAT, GREATEQUAL,
-    ADD, SUB, MOD, ASSIGN, MUL, DIV};
+    enum {OR, AND, EQUAL, NOTEQUAL, LESS, LESSEQUAL, GREAT, GREATEQUAL, ADD, SUB, MOD, ASSIGN, MUL, DIV};
     BinaryExpr(SymbolEntry *se, int op, ExprNode*expr1, ExprNode*expr2) : ExprNode(se), op(op), expr1(expr1), expr2(expr2){};
     void output(int level);
 };
@@ -49,6 +59,11 @@ public:
     Id(SymbolEntry *se) : ExprNode(se){};
     void output(int level);
 };
+
+
+
+
+
 
 class StmtNode : public Node
 {};
@@ -77,6 +92,35 @@ private:
     Id *id;
 public:
     DeclStmt(Id *id) : id(id){};
+    void output(int level);
+};
+
+class DefStmt : public StmtNode
+{
+private:
+    Id *id;
+    ExprNode *expr;
+public:
+    DefStmt(Id *id, ExprNode *expr) : id(id), expr(expr){};
+    void output(int level);
+};
+
+class ConstDeclStmt : public StmtNode
+{
+private:
+    Id *id;
+public:
+    ConstDeclStmt(Id *id) : id(id){};
+    void output(int level);
+};
+
+class ConstDefStmt : public StmtNode
+{
+private:
+    Id *id;
+    ExprNode *expr;
+public:
+    ConstDefStmt(Id *id, ExprNode *expr) : id(id), expr(expr){};
     void output(int level);
 };
 

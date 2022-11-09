@@ -6,11 +6,30 @@
     #include "parser.h"
     #include <ostream>
     #include <fstream>
+    #include <math.h>
     using namespace std;
 
     extern FILE *yyin; 
     extern FILE *yyout;
     extern bool dump_tokens;
+
+    int octalInChar_toDecimal(char* str) {
+        int length = strlen(str);
+        int result = 0;
+        for (int i = 0; i < length - 1; i++) {
+            result += (str[length - i - 1] - '0') * pow(8, i);
+        }
+        return result;
+    }
+
+    int HexadecimalInChar_toDecimal(char* str) {
+        int length = strlen(str);
+        int result = 0;
+        for (int i = 0; i < length - 2; i++) {
+            result += (str[length - i - 1] - '0') * pow(16, i);
+        }
+        return result;
+    }
 
     void DEBUG_FOR_LAB4(std::string s){
         std::string DEBUG_INFO = "[DEBUG LAB4]: \t" + s + "\n";
@@ -47,6 +66,12 @@ lineCommentElement .
 }
 <LINECOMMENT>{lineCommentElement} {}
 <LINECOMMENT>{lineCommentEnd} {BEGIN INITIAL;}
+
+"const" {
+    if(dump_tokens)
+        DEBUG_FOR_LAB4("CONST\tconst");
+    return CONST;
+}
 
 "int" {
     if(dump_tokens)
@@ -249,6 +274,18 @@ lineCommentElement .
     return STOPTIME;
 }
 
+{OCTAL} {
+    if(dump_tokens)
+        DEBUG_FOR_LAB4(yytext);
+    yylval.itype = octalInChar_toDecimal(yytext);
+    return INTEGER;
+}
+{HEXADECIMAL} {
+    if(dump_tokens)
+        DEBUG_FOR_LAB4(yytext);
+    yylval.itype = HexadecimalInChar_toDecimal(yytext);
+    return INTEGER;
+}
 {DECIMAL} {
     if(dump_tokens)
         DEBUG_FOR_LAB4(yytext);
@@ -265,6 +302,8 @@ lineCommentElement .
     yylval.strtype = lexeme;
     return ID;
 }
+
+
 {EOL} yylineno++;
 {WHITE}
 %%

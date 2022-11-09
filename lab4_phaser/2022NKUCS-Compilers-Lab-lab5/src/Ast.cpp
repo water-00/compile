@@ -18,6 +18,25 @@ void Ast::output()
         root->output(4); // root的类型开始是Node*，但是它被实例化了，于是会调用具体类型的output()
 }
 
+void UnaryExpr::output(int level)
+{
+    std::string op_str;
+    switch (op)
+    {
+    case NOT:
+        op_str = "not";
+        break;
+    case UNARY_PLUS:
+        op_str = "unary plus";
+        break;
+    case UNARY_MINUS:
+        op_str = "unary minus";
+        break;
+    }
+    fprintf(yyout, "%*cUnaryExpr\top: %s\n", level, ' ', op_str.c_str());
+    expr->output(level + 4);
+}
+
 void BinaryExpr::output(int level)
 {
     std::string op_str;
@@ -25,9 +44,6 @@ void BinaryExpr::output(int level)
     // 多加点运算符的token
     switch(op)
     {
-        case NOT:
-            op_str = "not";
-            break;
         case OR:
             op_str = "or";
             break;
@@ -113,6 +129,26 @@ void DeclStmt::output(int level)
 {
     fprintf(yyout, "%*cDeclStmt\n", level, ' ');
     id->output(level + 4);
+}
+
+void DefStmt::output(int level) 
+{
+    fprintf(yyout, "%*cDefStmt\n", level, ' ');
+    id->output(level + 4);
+    expr->output(level + 4);
+}
+
+void ConstDeclStmt::output(int level)
+{
+    fprintf(yyout, "%*cConstDeclStmt\n", level, ' ');
+    id->output(level + 4);
+}
+
+void ConstDefStmt::output(int level) 
+{
+    fprintf(yyout, "%*cConstDefStmt\n", level, ' ');
+    id->output(level + 4);
+    expr->output(level + 4);
 }
 
 void IfStmt::output(int level)
