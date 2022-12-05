@@ -25,7 +25,6 @@
     #include <math.h>
     #include <ostream>
     #include <fstream>
-    #include <stack>
     using namespace std;
     extern FILE *yyin; 
     extern FILE *yyout;
@@ -68,6 +67,7 @@
 
 	    public:
             int idNum = 0; // how many ids in this table
+            int blockNum = 0; // 这个block(或者说SymbolTable)在程序中是第几个block
 
 		    SymbolTable() {}
             void addItem(string name, int block, int id) {
@@ -77,7 +77,13 @@
             string getIdName(int i) {
                 return item.at(i).first;
             }
-            pair<int, int> getIdIndex() {
+            string getLastIdName() {
+                return item.back().first;
+            }
+            pair<int, int> getIdIndex(int i) {
+                return item.at(i).second;
+            }
+            pair<int, int> getLastIdIndex() {
                 return item.back().second;
             }
             void setIdName(string name) {
@@ -99,7 +105,6 @@
             }
     };
     int blockNum = 0; // how many blocks
-    int popNum = 0;
     vector <SymbolTable> STstack;
 
     #endif
@@ -153,6 +158,17 @@ lineCommentElement .
     #ifdef ONLY_FOR_LEX
         DEBUG_FOR_LAB4("INT\tint");
         offset += strlen(yytext);
+
+        // for SymbolTable:
+        if (STstack.empty()) {
+            SymbolTable st;
+            STstack.push_back(st); // 全局变量和全局函数的符号表
+        }
+
+        // 如果遇到了int，往栈顶符号表添加一个Item:<"UNDEFINED ID", <blockNum, idNum>>
+	    STstack.back().addItem("UNDEFINED ID", blockNum, STstack.back().idNum + 1);
+
+
     #else
         return INT;
     #endif
@@ -308,18 +324,10 @@ lineCommentElement .
     #ifdef ONLY_FOR_LEX
         DEBUG_FOR_LAB4("RBRACE\t}");
         offset += strlen(yytext);
-        popNum++;
+        blockNum--;
         STstack.pop_back(); // delete a SymbolTable when meeting "}"
     #else
         return RBRACE;
-    #endif
-}
-"main" {
-    #ifdef ONLY_FOR_LEX
-        DEBUG_FOR_LAB4("MAIN\tmain");
-        offset += strlen(yytext);
-    #else
-        return MAIN;
     #endif
 }
 
@@ -329,34 +337,40 @@ lineCommentElement .
         sprintf(str, "ID\t%s", yytext);
 
         // 实现符号表功能：
-        int block, idNum;
+        int block, id;
         string idPlace = "";
-        if (STstack.empty()) {
-            SymbolTable st;
-            STstack.push_back(st); // 全局变量和全局函数的符号表
-        }
-        // 查找ID是否在任意一符号表中
-        for (block = STstack.size() - 1; block >= 0; block--)
-        {
-            // 从最top的块（也即最top的符号表）开始找
-            idNum = STstack.at(block).checkIdName(str); // 如果找到了<block + popNum, idNum>就是它在最近的符号表中的位置
-            if (idNum != -1)
-            {
-                // 找到了，存储一下便于打印
-                idPlace = "<" + to_string(block + popNum) + ", " + to_string(idNum) + ">";
-                break;
-            }
-            else
-            {
-                continue;
-            }
+
+        // 先检查栈顶符号表中是否有name = "UNDEFINED ID"的Item
+        bool flag = false;
+        if ((STstack.back().idNum != 0) && (STstack.back().getLastIdName() == "UNDEFINED ID")) {
+            STstack.back().setIdName(yytext);
+            flag = true;
+
+            pair<int, int> place = STstack.back().getLastIdIndex();
+            idPlace = "<" + to_string(place.first) + ", " + to_string(place.second) + ">";
         }
 
-	    // 如果遍历所有存在的符号表都没有找到，则它是一个当前符号表的新id，把它添加到当前符号表
-	    STstack.back().addItem(str, blockNum, STstack.back().idNum + 1);
-        if (idPlace == "") {
-            idPlace = "<" + to_string(blockNum) + ", " + to_string(STstack.back().idNum) + ">";
+        // 查找ID是否在任意一符号表中，从栈顶符号表往下找
+        if (!flag)
+        {
+            for (block = STstack.size() - 1; block >= 0; block--)
+            {
+                id = STstack.at(block).checkIdName(yytext); // 在已有符号表元素中找到了，接下来提取它的位置<block, id>
+                if (id != -1)
+                {
+                    pair<int, int> place = STstack.at(block).getIdIndex(id - 1);
+                    idPlace = "<" + to_string(place.first) + ", " + to_string(place.second) + ">";
+                    break;
+                }
+                else
+                {
+                    continue;
+                }
+            }
+            if (idPlace == "")
+                idPlace = "<error>";
         }
+
         
         DEBUG_FOR_LAB4(str, idPlace);
         offset += strlen(yytext);

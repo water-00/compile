@@ -18,6 +18,7 @@ int main() {
 		int _testid;
 		int _testid2;
 		_testid1 = _testid1+1;
+		_testid = _testid+1;
 	}
 	/*
 		Comment lines;

@@ -2,12 +2,12 @@ INT	int	1	0
 ID	a	1	4	<0, 1>
 SEMICOLON	;	1	5	
 INT	int	3	0	
-MAIN	main	3	4	
+ID	main	3	4	<0, 2>
 LPAREN	(	3	8	
 RPAREN	)	3	9	
 LBRACE	{	4	0	
 INT	int	5	4	
-ID	a	5	8	<0, 1>
+ID	a	5	8	<1, 1>
 SEMICOLON	;	5	9	
 ID	a	6	4	<1, 1>
 ASSIGN	=	6	6	
