@@ -40,7 +40,7 @@
 %token MUL DIV MOD
 %token RETURN
 
-%nterm <stmttype> Stmts Stmt SingleStmt AssignStmt BlockStmt IfStmt WhileStmt ReturnStmt ConstDeclStmt DeclStmt /* DefStmt ConstDefStmt*/ FuncDef
+%nterm <stmttype> Stmts Stmt SingleStmt AssignStmt BlockStmt IfStmt WhileStmt ReturnStmt ConstDeclStmt DeclStmt FuncDef /* DefStmt ConstDefStmt*/ 
 %nterm <exprtype> Exp AddExp MulExp Cond PrimaryExp UnaryExp LVal RelExp LAndExp LOrExp EqExp 
 %nterm <type> Type
 %nterm <idlist> IdList
@@ -107,6 +107,9 @@ BlockStmt:
         SymbolTable *top = identifiers;
         identifiers = identifiers->getPrev();
         delete top;
+    }
+    | LBRACE RBRACE {
+        $$ = new Empty();
     }
     ;
 IfStmt:

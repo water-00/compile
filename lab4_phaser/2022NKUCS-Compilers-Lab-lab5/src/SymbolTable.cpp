@@ -73,7 +73,9 @@ SymbolEntry* SymbolTable::lookup(std::string name)
     if (symbolTable.find(name) != symbolTable.end()) {
         return symbolTable[name];
     } else {
-        return prev->lookup(name);
+        SymbolTable *t = this;
+        if (t->getPrev() != nullptr)
+            return prev->lookup(name);
     }
 
     return nullptr;

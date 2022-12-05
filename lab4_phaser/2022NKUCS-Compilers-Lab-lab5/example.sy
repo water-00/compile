@@ -1,11 +1,4 @@
-int add (int a, int b) {
-    return a+b;
-}
-
 int main()
 {
-    int a = 5;
-    int b = a, d = a;
-    int c = add(a + b);
-    return 0;
+    if (1 && 1) {}
 }
