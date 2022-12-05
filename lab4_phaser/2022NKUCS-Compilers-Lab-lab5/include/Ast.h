@@ -2,8 +2,10 @@
 #define __AST_H__
 
 #include <fstream>
+#include <vector>
 
 class SymbolEntry;
+class AssignStmt;
 
 class Node
 {
@@ -60,6 +62,65 @@ public:
     void output(int level);
 };
 
+class ConstId : public ExprNode
+{
+public:
+    ConstId(SymbolEntry *se) : ExprNode(se){};
+    void output(int level);
+};
+
+
+
+
+
+
+class ListNode : public Node 
+{};
+
+class IdList : public ListNode 
+{
+public:
+    std::vector<Id*> idlist;
+    std::vector<AssignStmt*> assignList;
+    IdList(std::vector<Id*> idlist, std::vector<AssignStmt*> assignList) : idlist(idlist), assignList(assignList) {};
+    void output(int level);
+};
+
+class ConIdList : public ListNode
+{
+public:
+    std::vector<ConstId*> conidlist; // 因为const语句中必须要给初值，所以实际上不用conidlist（不过也许后面函数的参数列表会用到？）
+    std::vector<AssignStmt*> assignList;
+    ConIdList(std::vector<ConstId*> conidlist, std::vector<AssignStmt*> assignList) : conidlist(conidlist), assignList(assignList) {};
+    void output(int level);
+};
+
+class FuncFParam : public ExprNode
+{
+public:
+    FuncFParam(SymbolEntry *se) : ExprNode(se){};
+    void output(int level);
+};
+
+class FuncRParams : public ListNode
+{
+public:
+    std::vector<ExprNode*> Exprs;
+    FuncRParams(std::vector<ExprNode*> Exprs) : Exprs(Exprs){};
+    void output(int level);
+};
+
+class FuncFParams : public ListNode
+{
+public:
+    std::vector<FuncFParam*> FPs;
+    std::vector<AssignStmt*> Assigns;
+    FuncFParams(std::vector<FuncFParam*> FPs, std::vector<AssignStmt*> Assigns) : FPs(FPs), Assigns(Assigns) {};
+    void output(int level);
+};
+
+
+
 
 
 
@@ -67,6 +128,21 @@ public:
 
 class StmtNode : public Node
 {};
+
+class Empty : public StmtNode
+{
+public:
+    void output(int level);
+};
+
+class SingleStmt : public StmtNode
+{
+private:
+    ExprNode* expr;
+public:
+    SingleStmt(ExprNode* expr) : expr(expr){};
+    void output(int level);
+};
 
 class CompoundStmt : public StmtNode
 {
@@ -89,38 +165,38 @@ public:
 class DeclStmt : public StmtNode
 {
 private:
-    Id *id;
+    IdList *ids;
 public:
-    DeclStmt(Id *id) : id(id){};
+    DeclStmt(IdList *ids) : ids(ids){};
     void output(int level);
 };
 
 class DefStmt : public StmtNode
 {
 private:
-    Id *id;
+    IdList *id;
     ExprNode *expr;
 public:
-    DefStmt(Id *id, ExprNode *expr) : id(id), expr(expr){};
+    DefStmt(IdList *id) : id(id){};
     void output(int level);
 };
 
 class ConstDeclStmt : public StmtNode
 {
 private:
-    Id *id;
+    ConIdList *cids;
 public:
-    ConstDeclStmt(Id *id) : id(id){};
+    ConstDeclStmt(ConIdList *cids) : cids(cids){};
     void output(int level);
 };
 
 class ConstDefStmt : public StmtNode
 {
 private:
-    Id *id;
+    ConstId *cid;
     ExprNode *expr;
 public:
-    ConstDefStmt(Id *id, ExprNode *expr) : id(id), expr(expr){};
+    ConstDefStmt(ConstId *cid) : cid(cid){};
     void output(int level);
 };
 
@@ -178,9 +254,18 @@ class FunctionDef : public StmtNode
 {
 private:
     SymbolEntry *se;
+    FuncFParams *FPs;
     StmtNode *stmt;
 public:
-    FunctionDef(SymbolEntry *se, StmtNode *stmt) : se(se), stmt(stmt){};
+    FunctionDef(SymbolEntry *se, FuncFParams *FPs, StmtNode *stmt) : se(se), FPs(FPs), stmt(stmt){};
+    void output(int level);
+};
+
+class FunctionCall : public ExprNode
+{
+public:
+    FuncRParams *RPs;
+    FunctionCall(SymbolEntry*se, FuncRParams *RPs) : ExprNode(se), RPs(RPs){};
     void output(int level);
 };
 

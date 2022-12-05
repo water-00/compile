@@ -14,11 +14,16 @@
 }
 
 %union {
+    // 返回类型
     int itype;
     char* strtype;
     StmtNode* stmttype;
     ExprNode* exprtype;
     Type* type;
+    IdList* idlist;
+    ConIdList* conidlist;
+    FuncFParams* Fstype;
+    FuncRParams* FRtype;
 }
 
 %start Program
@@ -26,19 +31,22 @@
 %token <itype> INTEGER
 %token CONST
 %token IF ELSE WHILE
-%token INT VOID
-%token LPAREN RPAREN LBRACE RBRACE SEMICOLON
+%token INT VOID CHAR
+%token LPAREN RPAREN LBRACE RBRACE SEMICOLON COMMA
 %token NOT OR AND
 %token EQUAL NOTEQUAL
 %token LESS LESSEQUAL GREAT GREATEQUAL
 %token ADD SUB ASSIGN
 %token MUL DIV MOD
 %token RETURN
-%token GETINT GETCH GETFLOAT GETARRAY GETFARRAY PUTINT PUTCH PUTFLOAT PUTARRAY PUTFARRAY PUTF STARTTIME STOPTIME
 
-%nterm <stmttype> Stmts Stmt AssignStmt BlockStmt IfStmt WhileStmt ReturnStmt ConstDeclStmt ConstDefStmt  DeclStmt DefStmt FuncDef
-%nterm <exprtype> Exp AddExp MulExp Cond PrimaryExp UnaryExp LVal RelExp LAndExp LOrExp EqExp
+%nterm <stmttype> Stmts Stmt SingleStmt AssignStmt BlockStmt IfStmt WhileStmt ReturnStmt ConstDeclStmt DeclStmt /* DefStmt ConstDefStmt*/ FuncDef
+%nterm <exprtype> Exp AddExp MulExp Cond PrimaryExp UnaryExp LVal RelExp LAndExp LOrExp EqExp 
 %nterm <type> Type
+%nterm <idlist> IdList
+%nterm <conidlist> ConIdList
+%nterm <Fstype> FuncFParams
+%nterm <FRtype> FuncRParams
 
 %precedence THEN
 %precedence ELSE
@@ -55,17 +63,21 @@ Stmts:
     }
     ;
 Stmt:
-    AssignStmt {$$=$1;}
+    SEMICOLON {$$ = new Empty();}
+    | SingleStmt {$$ = $1;}
+    | AssignStmt {$$=$1;}
     | BlockStmt {$$=$1;}
     | IfStmt {$$=$1;}
     | WhileStmt {$$=$1;}
     | ReturnStmt {$$=$1;}
     | DeclStmt {$$=$1;}
-    | DefStmt {$$ = $1;}
+    // | DefStmt {$$=$1;}
     | ConstDeclStmt {$$ = $1;}
-    | ConstDefStmt {$$ = $1;}
+    // | ConstDefStmt {$$ = $1;}
     | FuncDef {$$=$1;}
     ;
+
+
 LVal:
     ID {
         SymbolEntry *se;
@@ -79,7 +91,10 @@ LVal:
         $$ = new Id(se);
         delete []$1;
     }
-    ;
+SingleStmt: 
+    Exp SEMICOLON {
+        $$ = new SingleStmt($1);
+    };
 AssignStmt:
     LVal ASSIGN Exp SEMICOLON {
         $$ = new AssignStmt($1, $3);
@@ -130,6 +145,31 @@ PrimaryExp:
     };
 UnaryExp:
     PrimaryExp {$$ = $1;}
+    | ID LPAREN RPAREN {
+        // 先找function，再调用FunctionCall
+        SymbolEntry *se;
+        se = identifiers->lookup($1);
+        if(se == nullptr)
+        {
+            fprintf(stderr, "Function \"%s\" is undefined\n", (char*)$1);
+            delete [](char*)$1;
+            assert(se != nullptr);
+        }
+        $$ = new FunctionCall(se, nullptr);
+        delete []$1;
+    }
+    | ID LPAREN FuncRParams RPAREN{
+        SymbolEntry *se;
+        se = identifiers->lookup($1);
+        if(se == nullptr)
+        {
+            fprintf(stderr, "Function \"%s\" is undefined\n", (char*)$1);
+            delete [](char*)$1;
+            assert(se != nullptr);
+        }
+        $$ = new FunctionCall(se, $3);
+        delete []$1;
+    }
     | NOT UnaryExp {
         SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
         $$ = new UnaryExpr(se, UnaryExpr::NOT, $2);
@@ -156,7 +196,6 @@ MulExp:
         SymbolEntry *se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
         $$ = new BinaryExpr(se, BinaryExpr::MOD, $1, $3);
     };
-
 AddExp:
     MulExp {$$ = $1;}
     | AddExp ADD MulExp {
@@ -203,7 +242,7 @@ LAndExp:
         $$ = new BinaryExpr(se, BinaryExpr::AND, $1, $3);
     };
     ;
-LOrExp :
+LOrExp:
     LAndExp {$$ = $1;}
     | LOrExp OR LAndExp
     {
@@ -219,60 +258,233 @@ Type:
     }
     | VOID {
         $$ = TypeSystem::voidType;
-    };
+    }
 DeclStmt:
-    Type ID SEMICOLON {
-        SymbolEntry *se;
-        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
-        identifiers->install($2, se);
-        $$ = new DeclStmt(new Id(se));
-        delete []$2;
+    Type IdList SEMICOLON {
+        $$ = new DeclStmt($2);
     };
-DefStmt:
+// 用了idlist后就不用区分是DeclStmt还是DefStmt了，因为idlist里既有id也有assignExpr
+/* DefStmt:
     Type ID ASSIGN Exp SEMICOLON {
         SymbolEntry *se;
         se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
         identifiers->install($2, se);
         $$ = new DefStmt(new Id(se), $4);
         delete []$2;
-    };
+    };  */
 ConstDeclStmt:
-    CONST Type ID SEMICOLON {
-        SymbolEntry *se;
-        se = new IdentifierSymbolEntry($2, $3, identifiers->getLevel());
-        identifiers->install($3, se);
-        $$ = new ConstDeclStmt(new Id(se));
-        delete []$3;
+    CONST Type ConIdList SEMICOLON {
+        $$ = new ConstDeclStmt($3);
     };
-ConstDefStmt:
+/* ConstDefStmt:
     CONST Type ID ASSIGN Exp SEMICOLON {
         SymbolEntry *se;
         se = new IdentifierSymbolEntry($2, $3, identifiers->getLevel());
         identifiers->install($3, se);
         $$ = new DefStmt(new Id(se), $5);
         delete []$3;
+    } */
+IdList:
+    ID {
+        // 大致思路：
+        // 1. 把id放到符号表里去        
+        SymbolEntry *se;
+        se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
+        identifiers->install($1, se);
+        // 2. 定义一个类IdList的成员temp，操作IdList，把这一次产生式得到的id和expression分别放到IdList中的两个vector里去
+        std::vector<Id*> Ids;
+        std::vector<AssignStmt*> Assigns;
+        IdList *temp = new IdList(Ids, Assigns);
+        temp->idlist.push_back(new Id(se));
+        // 3. 非终结符IdList指向的就是这一个语句产生的所有ids和expressions
+        $$ = temp;
+        delete []$1;
+    }
+    | IdList COMMA ID {
+        SymbolEntry *se;
+        se = new IdentifierSymbolEntry(TypeSystem::intType, $3, identifiers->getLevel());
+        identifiers->install($3, se);
+
+        IdList *temp = $1; // 已经有IdList了
+        temp->idlist.push_back(new Id(se));
+
+        $$ = temp;
+        delete []$3;
+
+    }
+    | ID ASSIGN Exp{
+        SymbolEntry *se;
+        se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
+        identifiers->install($1, se);
+
+        std::vector<Id*> Ids;
+        std::vector<AssignStmt*> Assigns;
+        IdList *temp = new IdList(Ids, Assigns);
+        Id* t = new Id(se); // 这里必须定义一个t的原因是，$ 1只是一个char*（这是在%union段定义的），没法作为AssignStmt的第一个参数
+        temp->idlist.push_back(t);
+        temp->assignList.push_back(new AssignStmt(t, $3)); // 这俩vector是IdList里的成员变量
+
+        $$ = temp;
+        delete []$1;
+    }
+    | IdList COMMA ID ASSIGN Exp {
+        SymbolEntry *se;
+        se = new IdentifierSymbolEntry(TypeSystem::intType, $3, identifiers->getLevel());
+        identifiers->install($3, se);
+
+        IdList *temp = $1;
+        Id* t = new Id(se);
+        temp->idlist.push_back(t);
+        temp->assignList.push_back(new AssignStmt(t, $5));
+
+        $$ = temp;
+        delete []$3;
     };
+ConIdList:
+    ID ASSIGN Exp {
+        SymbolEntry *se;
+        se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
+        identifiers->install($1, se); 
+
+        std::vector<ConstId*> Conids;
+        std::vector<AssignStmt*> Assigns;
+        ConIdList *temp = new ConIdList(Conids, Assigns);
+        ConstId *t = new ConstId(se);
+        temp->conidlist.push_back(t);
+        temp->assignList.push_back(new AssignStmt(t, $3));
+
+        $$ = temp;
+        delete []$1;
+    }
+    | ConIdList COMMA ID ASSIGN Exp {
+        SymbolEntry *se;
+        se = new IdentifierSymbolEntry(TypeSystem::intType, $3, identifiers->getLevel());
+        identifiers->install($3, se);
+
+        ConIdList *temp = $1;
+        ConstId *t = new ConstId(se);
+        temp->conidlist.push_back(t);
+        temp->assignList.push_back(new AssignStmt(t, $5));
+
+        $$ = temp;
+        delete []$3;
+    };
+
 FuncDef:
-    Type ID {
+    Type ID LPAREN {
         Type *funcType;
         funcType = new FunctionType($1,{});
         SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
         identifiers->install($2, se);
         identifiers = new SymbolTable(identifiers);
     }
-    LPAREN RPAREN
+    RPAREN
     BlockStmt
     {
+        // 在符号表中找到id
         SymbolEntry *se;
         se = identifiers->lookup($2);
         assert(se != nullptr);
-        $$ = new FunctionDef(se, $6);
+        // 定义函数，并把它加到符号表里？
+        $$ = new FunctionDef(se, nullptr,$6);
+        SymbolTable *top = identifiers;
+        identifiers = identifiers->getPrev();
+        delete top;
+        delete []$2;
+    }
+    | Type ID LPAREN {
+        Type *funcType;
+        funcType = new FunctionType($1,{});
+        SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
+        identifiers->install($2, se);
+        identifiers = new SymbolTable(identifiers);
+    } FuncFParams RPAREN
+    BlockStmt {
+        SymbolEntry *se;
+        se = identifiers->lookup($2);
+        assert(se != nullptr);
+
+        $$ = new FunctionDef(se, $5 ,$7);
         SymbolTable *top = identifiers;
         identifiers = identifiers->getPrev();
         delete top;
         delete []$2;
     };
 
+FuncFParams: 
+    Type ID 
+    {
+        // 1. 把id加入符号表
+        SymbolEntry *se;
+        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
+        identifiers->install($2, se);
+        // 2. 把id和expression加入FuncFParams的vector
+        std::vector<FuncFParam*> FPs;
+        std::vector<AssignStmt*> Assigns;
+        FuncFParams *temp = new FuncFParams(FPs, Assigns);
+        temp->FPs.push_back(new FuncFParam(se));
+        // 3. 非终结符FuncFParams指向这一个语句中的ids和expressions
+        $$ = temp;
+        delete []$2;
+    }
+    | FuncFParams COMMA Type ID
+    {
+        SymbolEntry *se;
+        se = new IdentifierSymbolEntry($3, $4, identifiers->getLevel());
+        identifiers->install($4, se);
+
+        FuncFParams *temp = $1;
+        temp -> FPs.push_back(new FuncFParam(se));
+
+        $$ = temp;
+        delete []$4;
+    }
+    | Type ID ASSIGN Exp
+    {
+        SymbolEntry *se;
+        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
+        identifiers->install($2, se);
+
+        std::vector<FuncFParam*> FPs;
+        std::vector<AssignStmt*> Assigns;
+        FuncFParams *temp = new FuncFParams(FPs, Assigns);
+        FuncFParam* t = new FuncFParam(se); // 需要一个t，理由同idlist，因为$ 2是char*
+        temp -> FPs.push_back(t);
+        temp -> Assigns.push_back(new AssignStmt(t, $4));
+
+        $$ = temp;
+        delete []$2;
+    }
+    | FuncFParams COMMA Type ID ASSIGN Exp
+    {
+        SymbolEntry *se;
+        se = new IdentifierSymbolEntry($3, $4, identifiers->getLevel());
+        identifiers->install($4, se);
+
+        FuncFParams *temp = $1;
+        FuncFParam* t = new FuncFParam(se);
+        temp -> FPs.push_back(t);
+        temp -> Assigns.push_back(new AssignStmt(t, $6));
+
+        $$ = temp;
+        delete []$4;
+    };
+
+FuncRParams:
+    Exp
+    {
+        std::vector<ExprNode*> t;
+        t.push_back($1);
+        FuncRParams *temp = new FuncRParams(t);
+        $$ = temp;
+    }
+    | FuncRParams COMMA Exp
+    {
+        FuncRParams *temp = $1;
+        temp->Exprs.push_back($3);
+        $$ = temp;
+    }
+    ;
 %%
 
 int yyerror(char const* message)

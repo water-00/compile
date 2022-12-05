@@ -22,11 +22,19 @@
         return result;
     }
 
+    // 这个函数还有问题，没有考虑ABCDE, abcde
     int HexadecimalInChar_toDecimal(char* str) {
         int length = strlen(str);
         int result = 0;
         for (int i = 0; i < length - 2; i++) {
-            result += (str[length - i - 1] - '0') * pow(16, i);
+            if ('0' <= str[length - i - 1] && str[length - i - 1] <= '9'){
+                result += (str[length - i - 1] - '0') * pow(16, i);
+            } else if ('a' <= str[length - i - 1] && str[length - i - 1] <= 'z') {
+                result += (str[length - i - 1] - 'a' + 10) * pow(16, i);
+            } else if ('A' <= str[length - i - 1] && str[length - i - 1] <= 'Z') {
+                result += (str[length - i - 1] - 'A' + 10) * pow(16, i);
+            }
+            
         }
         return result;
     }
@@ -72,7 +80,11 @@ lineCommentElement .
         DEBUG_FOR_LAB4("CONST\tconst");
     return CONST;
 }
-
+"," {
+    if(dump_tokens)
+        DEBUG_FOR_LAB4("COMMA\t,");
+    return COMMA;
+}
 "int" {
     if(dump_tokens)
         DEBUG_FOR_LAB4("INT\tint");
@@ -208,71 +220,6 @@ lineCommentElement .
     return RBRACE;
 }
 
-"getint" {
-    if(dump_tokens)
-        DEBUG_FOR_LAB4("GETINT\tgetint");
-    return GETINT;
-}
-"getch" {
-    if(dump_tokens)
-        DEBUG_FOR_LAB4("GETCH\tgetch");
-    return GETCH;
-}
-"getfloat" {
-    if(dump_tokens)
-        DEBUG_FOR_LAB4("GETFLOAT\tgetfloat");
-    return GETFLOAT;
-}
-"getarray" {
-    if(dump_tokens)
-        DEBUG_FOR_LAB4("GETARRAY\tgetarray");
-    return GETARRAY;
-}
-"getfarray" {
-    if(dump_tokens)
-        DEBUG_FOR_LAB4("GETFARRAY\tgetfarray");
-    return GETFARRAY;
-}
-"putint" {
-    if(dump_tokens)
-        DEBUG_FOR_LAB4("PUTINT\tputint");
-    return PUTINT;
-}
-"putch" {
-    if(dump_tokens)
-        DEBUG_FOR_LAB4("PUTCH\tputch");
-    return PUTCH;
-}
-"putfloat" {
-    if(dump_tokens)
-        DEBUG_FOR_LAB4("PUTFLOAT\tputfloat");
-    return PUTFLOAT;
-}
-"putarray" {
-    if(dump_tokens)
-        DEBUG_FOR_LAB4("PUTARRAY\tputarray");
-    return PUTARRAY;
-}
-"putfarray" {
-    if(dump_tokens)
-        DEBUG_FOR_LAB4("PUTFARRAY\tputfarray");
-    return PUTFARRAY;
-}
-"putf" {
-    if(dump_tokens)
-        DEBUG_FOR_LAB4("PUTF\tputf");
-    return PUTF;
-}
-"starttime" {
-    if(dump_tokens)
-        DEBUG_FOR_LAB4("STARTTIME\tstarttime");
-    return STARTTIME;
-}
-"stoptime" {
-    if(dump_tokens)
-        DEBUG_FOR_LAB4("STOPTIME\tstoptime");
-    return STOPTIME;
-}
 
 {OCTAL} {
     if(dump_tokens)
