@@ -11,7 +11,8 @@ int main()
 	d=getint();
 	e=getint();
 	int flag=0;
-	if(a-b*c!=d-a/c||a*b/c==e+d||a+b+c==d+e)
+	if(a-b*c != d-a/c || a*b/c == e+d || a+b+c == d+e)
+	// ==, != > && > ||
 	{
 		flag=1;
 	}

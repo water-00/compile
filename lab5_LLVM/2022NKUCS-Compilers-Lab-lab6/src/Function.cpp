@@ -54,7 +54,6 @@ void Function::output() const
     while (!q.empty()) {
         auto bb = q.front();
         q.pop_front(); // 头部弹出
-        // 下面这句话有问题
         bb->output();
         // std::cout << "进入了Function的while循环，bb->getNo() = " << bb->getNo() << std::endl;
 

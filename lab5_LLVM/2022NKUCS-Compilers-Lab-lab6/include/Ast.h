@@ -45,6 +45,8 @@ public:
     Operand* getDst() {return dst;}
     Operand* getOperand() {return dst;};
     SymbolEntry* getSymPtr() {return symbolEntry;};
+    Type *getType() {return symbolEntry->getType(); }
+    std::string toStr() {return dst->toStr();}
 };
 
 class UnaryExpr : public ExprNode
@@ -172,7 +174,10 @@ public:
 
 
 class StmtNode : public Node
-{};
+{
+public:
+    Type *type;
+};
 
 class Empty : public StmtNode
 {

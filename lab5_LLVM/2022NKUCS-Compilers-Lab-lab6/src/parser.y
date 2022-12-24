@@ -370,10 +370,17 @@ IdList:
     ID {
         // std::cout << "parser.y" << "  IdList: ID" << std::endl;
         // 大致思路：
-        // 1. 把id放到符号表里去        
+        // 1. 先进行类型检查，如果符号表没有则把id放到符号表里去
         SymbolEntry *se;
         se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
-        identifiers->install($1, se);
+        if (!identifiers->lookup($1)) {
+            identifiers->install($1, se);
+        } else {
+            fprintf(stderr,"identifier \"%s\" is redefined\n",(char*)$1);
+            delete [](char*)$1;
+            exit(EXIT_FAILURE);
+        }
+        
         // 2. 定义一个类IdList的成员temp，操作IdList，把这一次产生式得到的id和expression分别放到IdList中的两个vector里去
         std::vector<Id*> Ids;
         std::vector<AssignStmt*> Assigns;
@@ -387,8 +394,13 @@ IdList:
         // std::cout << "parser.y" << "  IdList: IdList COMMA ID" << std::endl;
         SymbolEntry *se;
         se = new IdentifierSymbolEntry(TypeSystem::intType, $3, identifiers->getLevel());
-        identifiers->install($3, se);
-
+        if (!identifiers->lookup($3)) {
+            identifiers->install($3, se);
+        } else {
+            fprintf(stderr,"identifier \"%s\" is redefined\n",(char*)$3);
+            delete [](char*)$3;
+            exit(EXIT_FAILURE);
+        }
         IdList *temp = $1; // 已经有IdList了
         temp->idlist.push_back(new Id(se));
 
@@ -400,8 +412,13 @@ IdList:
         // std::cout << "parser.y" << "  IdList: ID ASSIGN Exp" << std::endl;
         SymbolEntry *se;
         se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
-        identifiers->install($1, se);
-
+        if (!identifiers->lookup($1)) {
+            identifiers->install($1, se);
+        } else {
+            fprintf(stderr,"identifier \"%s\" is redefined\n",(char*)$1);
+            delete [](char*)$1;
+            exit(EXIT_FAILURE);
+        }
         std::vector<Id*> Ids;
         std::vector<AssignStmt*> Assigns;
         IdList *temp = new IdList(Ids, Assigns);
@@ -416,8 +433,13 @@ IdList:
         // std::cout << "parser.y" << "  IdList: IdList COMMA ID ASSIGN Exp" << std::endl;
         SymbolEntry *se;
         se = new IdentifierSymbolEntry(TypeSystem::intType, $3, identifiers->getLevel());
-        identifiers->install($3, se);
-
+        if (!identifiers->lookup($3)) {
+            identifiers->install($3, se);
+        } else {
+            fprintf(stderr,"identifier \"%s\" is redefined\n",(char*)$3);
+            delete [](char*)$3;
+            exit(EXIT_FAILURE);
+        }
         IdList *temp = $1;
         Id* t = new Id(se);
         temp->idlist.push_back(t);
@@ -431,8 +453,13 @@ ConIdList:
         // std::cout << "parser.y" << "  ConIdList: Id ASSIGN Exp" << std::endl;
         SymbolEntry *se;
         se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
-        identifiers->install($1, se); 
-
+        if (!identifiers->lookup($1)) {
+            identifiers->install($1, se);
+        } else {
+            fprintf(stderr,"identifier \"%s\" is redefined\n",(char*)$1);
+            delete [](char*)$1;
+            exit(EXIT_FAILURE);
+        }
         std::vector<ConstId*> Conids;
         std::vector<AssignStmt*> Assigns;
         ConIdList *temp = new ConIdList(Conids, Assigns);
@@ -447,8 +474,13 @@ ConIdList:
         // std::cout << "parser.y" << "  ConIdList: ConIdList COMMA ID ASSIGN Exp" << std::endl;
         SymbolEntry *se;
         se = new IdentifierSymbolEntry(TypeSystem::intType, $3, identifiers->getLevel());
-        identifiers->install($3, se);
-
+        if (!identifiers->lookup($3)) {
+            identifiers->install($3, se);
+        } else {
+            fprintf(stderr,"identifier \"%s\" is redefined\n",(char*)$3);
+            delete [](char*)$3;
+            exit(EXIT_FAILURE);
+        }
         ConIdList *temp = $1;
         ConstId *t = new ConstId(se);
         temp->conidlist.push_back(t);
@@ -464,7 +496,13 @@ FuncDef:
         Type *funcType;
         funcType = new FunctionType($1,{});
         SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
-        identifiers->install($2, se);
+        if (!identifiers->lookup($2)) {
+            identifiers->install($2, se);
+        } else {
+            fprintf(stderr,"function \"%s\" is redefined\n",(char*)$2);
+            delete [](char*)$2;
+            exit(EXIT_FAILURE);
+        }
         identifiers = new SymbolTable(identifiers);
     }
     RPAREN
@@ -486,7 +524,13 @@ FuncDef:
         Type *funcType;
         funcType = new FunctionType($1,{});
         SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
-        identifiers->install($2, se);
+        if (!identifiers->lookup($2)) {
+            identifiers->install($2, se);
+        } else {
+            fprintf(stderr,"function \"%s\" is redefined\n",(char*)$2);
+            delete [](char*)$2;
+            exit(EXIT_FAILURE);
+        }
         identifiers = new SymbolTable(identifiers);
     } FuncFParams RPAREN
     BlockStmt {

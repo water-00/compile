@@ -166,7 +166,9 @@ UncondBrInstruction::UncondBrInstruction(BasicBlock *to, BasicBlock *insert_bb) 
 void UncondBrInstruction::output() const
 {
     // std::cout << "UncondBrInstruction::output()\n";
-    fprintf(yyout, "  br label %%B%d\n", branch->getNo());
+    if (!branch->empty()) {
+        fprintf(yyout, "  br label %%B%d\n", branch->getNo());
+    }
 }
 
 void UncondBrInstruction::setBranch(BasicBlock *bb)
@@ -200,7 +202,7 @@ void CondBrInstruction::output() const
     type = operands[0]->getType()->toStr();
     int true_label = true_branch->getNo();
     int false_label = false_branch->getNo();
-    fprintf(yyout, "  br %s %s, label %%B%d, label %%B%d\n", type.c_str(), cond.c_str(), true_label, false_label);
+    fprintf(yyout, "  br i1 %s, label %%B%d, label %%B%d\n",  cond.c_str(), true_label, false_label);
 }
 
 void CondBrInstruction::setFalseBranch(BasicBlock *bb)
@@ -296,7 +298,7 @@ void AllocaGlobalInstruction::output() const {
     std::string dst, type;
     dst = operands[0]->toStr();
     type = se->getType()->toStr();
-    fprintf(yyout, "  %s = global %s %s, align 4\n", dst.c_str(),  type.c_str(), num->toStr().c_str());
+    fprintf(yyout, "  %s = global %s %s, align 4\n", dst.c_str(),  type.c_str(), (num->toStr()).c_str());
 }
 
 LoadInstruction::LoadInstruction(Operand *dst, Operand *src_addr, BasicBlock *insert_bb) : Instruction(LOAD, insert_bb)
@@ -373,26 +375,34 @@ void CallInstruction::output() const {
     // std::cout << "CallInstruction::output()\n";
     FunctionType *type = (FunctionType*)(func->getType());
     
+    if (operands[0] == nullptr) {
+        // std::cout << "operands[0] == nullptr\n";
+    }
+    if (type->getRetType() == TypeSystem::voidType) {
+        // std::cout << "type->getRetType() == TypeSystem::voidType\n";
+    }
+
     // 分为两种情况：有返回值(operands[0]/dst不为空且返回类型不为void)和没有返回值
     if (operands[0] && (type->getRetType() != TypeSystem::voidType)) {
-        fprintf(yyout, "  call %s %s(", type->getRetType()->toStr().c_str(), func->toStr().c_str());
-        // 添加实参, 从operand[1]开始
-        for (long unsigned int i = 1; i < operands.size(); i++) {
-            if (i != operands.size() - 1) {
-                fprintf(yyout, "%s %s, ", operands[i]->getType()->toStr().c_str(), operands[i]->toStr().c_str());
-            } else {
-                fprintf(yyout, "%s %s)\n", operands[i]->getType()->toStr().c_str(), operands[i]->toStr().c_str());
-            }
-        }
-    } else {
         fprintf(yyout, "  %s = call %s %s(", operands[0]->toStr().c_str(), type->getRetType()->toStr().c_str(), func->toStr().c_str());
         // 添加实参, 从operand[1]开始
         for (long unsigned int i = 1; i < operands.size(); i++) {
             if (i != operands.size() - 1) {
                 fprintf(yyout, "%s %s, ", operands[i]->getType()->toStr().c_str(), operands[i]->toStr().c_str());
             } else {
-                fprintf(yyout, "%s %s)\n", operands[i]->getType()->toStr().c_str(), operands[i]->toStr().c_str());
+                fprintf(yyout, "%s %s", operands[i]->getType()->toStr().c_str(), operands[i]->toStr().c_str());
+            }
+        }
+    } else {
+        fprintf(yyout, "  call %s %s(", type->getRetType()->toStr().c_str(), func->toStr().c_str());
+        // 添加实参, 从operand[1]开始
+        for (long unsigned int i = 1; i < operands.size(); i++) {
+            if (i != operands.size() - 1) {
+                fprintf(yyout, "%s %s, ", operands[i]->getType()->toStr().c_str(), operands[i]->toStr().c_str());
+            } else {
+                fprintf(yyout, "%s %s", operands[i]->getType()->toStr().c_str(), operands[i]->toStr().c_str());
             }
         }
     }
+    fprintf(yyout, ")\n");
 }

@@ -20,7 +20,6 @@ private:
     std::vector<BasicBlock *> block_list;
     SymbolEntry *sym_ptr;
     BasicBlock *entry; // 函数的入口
-    // 助教建议：再完成exit，以便于处理比如在if中return等情况
     Unit *parent;
     std::vector<Operand *> params;
 
