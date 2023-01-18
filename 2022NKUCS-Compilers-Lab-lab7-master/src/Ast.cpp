@@ -708,37 +708,36 @@ void FuncFParam::genCode(){ // 函数形参
 void FuncFParams::genCode() { // 函数形参列表
     std::cout << "in FuncFParams::genCode()\n";
     for (long unsigned int i = 0; i < FPs.size(); i++) {
-        // 对于形参列表中的一个形参，需要做的是：
-        // 创建一个临时变量，其地址内存放call function时传给该形参的值
-        //    %3 = alloca i32, align 4
-        //    store i32 %0, i32* %3, align 4 ; %0为函数形参，%3为函数内创建的临时变量
 
-        // type1--addr_se1--addr1: 类型为形参类型的指针，就是new StoreInstruction的第一个操作数，dst，在中间代码的store中会被放到后  %3
-        // type2--addr_se2--addr2: 类型为形参类型，就是StoreInstruction的第二个操作数，src，在中间代码的store中会被放到前  %0
-        //     StoreInstruction(Operand *dst, Operand *src, BasicBlock *insert_bb = nullptr);
-        
         IdentifierSymbolEntry *se = dynamic_cast<IdentifierSymbolEntry *>(FPs[i]->getSymPtr());
+        std::cout << "kind: " << se->getKind() << std::endl; // 1, VARIABLE
+        std::cout << "scope: " << se->getScope() << std::endl; // 1, PARAM
+
+
         Function *func = builder->getInsertBB()->getParent();
         Type *type1 = new PointerType(se->getType());
-        Type *type2 = new IntType(32); // 如果要支持float类型那要改的是这里，src
+        // Type *type2 = new IntType(32); // 如果要支持float类型那要改的是这里，src
 
         SymbolEntry *addr_se1 = new TemporarySymbolEntry(type1, SymbolTable::getLabel());
-        SymbolEntry *addr_se2 = new TemporarySymbolEntry(type2, SymbolTable::getLabel());
+        // SymbolEntry *addr_se2 = new TemporarySymbolEntry(type2, SymbolTable::getLabel());
 
         Operand *addr1 = new Operand(addr_se1);
-        Operand *addr2 = new Operand(addr_se2);
+        Operand *addr2 = new Operand(FPs[i]->getSymPtr());
+
+        SymbolEntry *se1 = addr1->getSe();
+        std::cout << "addr1 kind: " << se1->getKind() << std::endl;
 
         BasicBlock *entry = func->getEntry();
-        AllocaInstruction *alloca = new AllocaInstruction(addr1, se); // 创建%3
+        AllocaInstruction *alloca = new AllocaInstruction(addr1, se);
         entry->insertFront(alloca);
 
-        // std::cout << builder->getInsertBB()->getNo() << std::endl;
+        // str source, dst dst是第一个参数(应该为Temporary类型)，src是第二个(应该为Variable类型)
         StoreInstruction *store = new StoreInstruction(addr1, addr2, builder->getInsertBB()); // 用于生成store i32 %0, i32* %3, align 4
-        se->setAddr(addr1); // se的地址是dst(%0的地址是%3)
         entry->insertBack(store);
 
-        func->getParams().push_back(addr2); // function的形参列表多了src(%0)
-        // 总之就是StoreInstruction中参数的顺序(dst, src)和真正store指令中操作数的顺序(src.type, src, dst.type, dst)反了
+        se->setAddr(addr1);
+        func->getParams().push_back(addr2);
+
     }
     std::cout << "out FuncFParams::genCode()\n";
 }

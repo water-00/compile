@@ -260,13 +260,18 @@ MachineOperand* Instruction::genMachineOperand(Operand* ope)
 {
     SymbolEntry* se = ope->getEntry();
     MachineOperand* mope = nullptr;
-    if(se->isConstant())
+    if(se->isConstant()) {
+        std::cout << "se isConstant\n";
         mope = new MachineOperand(MachineOperand::IMM, dynamic_cast<ConstantSymbolEntry*>(se)->getValue());
-    else if(se->isTemporary())
+    }
+    else if(se->isTemporary()) {
+        std::cout << "se isTemporary, label = " << dynamic_cast<TemporarySymbolEntry*>(se)->getLabel() << std::endl;
         mope = new MachineOperand(MachineOperand::VREG, dynamic_cast<TemporarySymbolEntry*>(se)->getLabel());
+    }
     else if(se->isVariable())
     {
         auto id_se = dynamic_cast<IdentifierSymbolEntry*>(se);
+        std::cout << "se isVariable, name = " << id_se->getName() << ", scope = " << id_se->getScope() << std::endl;
         if(id_se->isGlobal())
             mope = new MachineOperand(id_se->toStr().c_str());
         else if(id_se->isParam()){
@@ -402,6 +407,7 @@ void StoreInstruction::genMachineCode(AsmBuilder* builder)
     auto cur_block = builder->getBlock(); // 获取当前block
     MachineInstruction* cur_inst = nullptr; // 指令
     // store reg, addr
+    MachineOperand* dst = genMachineOperand(operands[0]); // Instruction::genMachineOperand(Operand *ope)
     MachineOperand* src = genMachineOperand(operands[1]);
     // 如果把一个常数存起来
     if (operands[1]->getEntry()->isConstant()){
@@ -415,14 +421,13 @@ void StoreInstruction::genMachineCode(AsmBuilder* builder)
     // store一个全局变量
     if(operands[0]->getEntry()->isVariable() && dynamic_cast<IdentifierSymbolEntry*>(operands[0]->getEntry())->isGlobal()) {
         std::cout << "global operand\n";
-        auto dst = genMachineOperand(operands[0]); // 目的
+        // auto dst = genMachineOperand(operands[0]); // 目的
         auto internal_reg1 = genMachineVReg(); // MachineOperand(MachineOperand::VREG, SymbolTable::getLabel());
-        auto internal_reg2 = new MachineOperand(*internal_reg1); // internal_reg1对应的MachineOperand
         // dst--->internal_reg1
         cur_inst = new LoadMInstruction(cur_block, internal_reg1, dst);
         cur_block->InsertInst(cur_inst);
         // internal_reg2---->src
-        cur_inst = new StoreMInstruction(cur_block, src, internal_reg2);
+        cur_inst = new StoreMInstruction(cur_block, src, internal_reg1);
         cur_block->InsertInst(cur_inst);
     }
     // store栈中的临时变量，t0，t1
@@ -432,7 +437,7 @@ void StoreInstruction::genMachineCode(AsmBuilder* builder)
         // 偏移量
         auto src2 = genMachineImm(dynamic_cast<TemporarySymbolEntry*>(operands[0]->getEntry())->getOffset());
         cur_inst = new StoreMInstruction(cur_block, src, src1, src2);
-        cur_block -> InsertInst(cur_inst);
+        cur_block->InsertInst(cur_inst);
     }
     // store 临时变量
     else {

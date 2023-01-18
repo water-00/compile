@@ -11,17 +11,18 @@ class Operand;
 class SymbolEntry 
 {
 private:
-    int kind;
     SymbolEntry* next;
 protected:
-    enum { CONSTANT, VARIABLE, TEMPORARY };
     Type* type;
 public:
+    int kind;
+    enum { CONSTANT, VARIABLE, TEMPORARY };
     SymbolEntry(Type* type, int kind);
     virtual ~SymbolEntry(){};
     bool isConstant() const { return kind == CONSTANT; };
     bool isTemporary() const { return kind == TEMPORARY; };
     bool isVariable() const { return kind == VARIABLE; };
+    int getKind() const { return kind; };
     Type* getType() { return type; };
     void setType(Type* type) { this->type = type; };
     virtual std::string toStr() = 0;
@@ -117,7 +118,9 @@ public:
     bool isParam() const { return scope == PARAM; };
     bool isLocal() const { return scope == LOCAL; };
     bool isSysy() const { return sysy; };
+    std::string getName() const {return name; };
     int getScope() const { return scope; };
+    void setScope(int s) { this->scope = s; };
     void setAddr(Operand* addr) { this->addr = addr; };
     Operand* getAddr() { return addr; };
     void setValue(int value);

@@ -5,7 +5,7 @@
     extern Ast ast;
     int yylex();
     int yyerror( char const * );
-    int test = 1;
+    int paramCount = 0; // 表示每个Function中有几个参数，每次FunctionDef结束时都要重置
 }
 
 %code requires {
@@ -375,12 +375,7 @@ IdList:
         se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
         if (!identifiers->lookup($1)) {
             identifiers->install($1, se);
-        } // else { //2012679 去掉重定义报错这部分
-           // fprintf(stderr,"identifier \"%s\" is redefined\n",(char*)$1);
-           // delete [](char*)$1;
-           // exit(EXIT_FAILURE);
-       // }
-        
+        } 
         // 2. 定义一个类IdList的成员temp，操作IdList，把这一次产生式得到的id和expression分别放到IdList中的两个vector里去
         std::vector<Id*> Ids;
         std::vector<AssignStmt*> Assigns;
@@ -396,11 +391,7 @@ IdList:
         se = new IdentifierSymbolEntry(TypeSystem::intType, $3, identifiers->getLevel());
         if (!identifiers->lookup($3)) {
             identifiers->install($3, se);
-        } // else {//2012679 去掉重定义报错这部分
-           // fprintf(stderr,"identifier \"%s\" is redefined\n",(char*)$3);
-           // delete [](char*)$3;
-            //exit(EXIT_FAILURE);
-        // }
+        }
         IdList *temp = $1; // 已经有IdList了
         temp->idlist.push_back(new Id(se));
 
@@ -432,11 +423,7 @@ IdList:
         se = new IdentifierSymbolEntry(TypeSystem::intType, $3, identifiers->getLevel());
         if (!identifiers->lookup($3)) {
             identifiers->install($3, se);
-        } // else {  //2012679 去掉重定义报错这部分
-           // fprintf(stderr,"identifier \"%s\" is redefined\n",(char*)$3);
-         //   delete [](char*)$3;
-         //   exit(EXIT_FAILURE);
-     //   }
+        }
         // 2012679 增 
         ((IdentifierSymbolEntry*)se)->setValue($5->getValue());
         IdList *temp = $1;
@@ -454,11 +441,7 @@ ConIdList:
         se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
         if (!identifiers->lookup($1)) {
             identifiers->install($1, se);
-        } // else { //2012679 去掉重定义报错这部分
-          //  fprintf(stderr,"identifier \"%s\" is redefined\n",(char*)$1);
-          //  delete [](char*)$1;
-          //  exit(EXIT_FAILURE);
-      //  }
+        } 
         // 2012679 增
         ((IdentifierSymbolEntry*)se)->setConst();
         ((IdentifierSymbolEntry*)se)->setValue($3->getValue()); 
@@ -496,16 +479,13 @@ ConIdList:
 FuncDef:
     Type ID LPAREN {
         // std::cout << "parser.y" << "  FuncDef: Type ID LPAREN RPAREN BlockStmt" << std::endl;
+        paramCount = 0;
         Type *funcType;
         funcType = new FunctionType($1,{});
         SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
         if (!identifiers->lookup($2)) {
             identifiers->install($2, se);
-        } else {
-            fprintf(stderr,"function \"%s\" is redefined\n",(char*)$2);
-            delete [](char*)$2;
-            exit(EXIT_FAILURE);
-        }
+        } 
         identifiers = new SymbolTable(identifiers);
     }
     RPAREN
@@ -524,15 +504,12 @@ FuncDef:
     }
     | Type ID LPAREN {
         // std::cout << "parser.y" << "  FuncDef: Type ID LPAREN FuncFParams RPAREN BlockStmt" << std::endl;
+        paramCount = 0;
         Type *funcType;
         funcType = new FunctionType($1,{});
         SymbolEntry *se = new IdentifierSymbolEntry(funcType, $2, identifiers->getLevel());
         if (!identifiers->lookup($2)) {
             identifiers->install($2, se);
-        } else {
-            fprintf(stderr,"function \"%s\" is redefined\n",(char*)$2);
-            delete [](char*)$2;
-            exit(EXIT_FAILURE);
         }
         identifiers = new SymbolTable(identifiers);
     } FuncFParams RPAREN
@@ -554,7 +531,7 @@ FuncFParams:
         // std::cout << "parser.y" << "  FuncFParams: Type ID" << std::endl;
         // 1. 把id加入符号表
         SymbolEntry *se;
-        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
+        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), paramCount++);
         identifiers->install($2, se);
         // 2. 把id和expression加入FuncFParams的vector
         std::vector<FuncFParam*> FPs;
@@ -569,7 +546,7 @@ FuncFParams:
     {
         // std::cout << "parser.y" << "  FuncFParams: FuncFParams COMMA Type ID" << std::endl;
         SymbolEntry *se;
-        se = new IdentifierSymbolEntry($3, $4, identifiers->getLevel());
+        se = new IdentifierSymbolEntry($3, $4, identifiers->getLevel(), paramCount++);
         identifiers->install($4, se);
 
         FuncFParams *temp = $1;
@@ -582,7 +559,7 @@ FuncFParams:
     {
         // std::cout << "parser.y" << "  FuncFParams: Type ID ASSIGN Exp" << std::endl;
         SymbolEntry *se;
-        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel());
+        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), paramCount++);
         identifiers->install($2, se);
 
         std::vector<FuncFParam*> FPs;
@@ -599,7 +576,7 @@ FuncFParams:
     {
         // std::cout << "parser.y" << "  FuncFParams: FuncFParams COMMA Type ID = ASSIGN Exp" << std::endl;
         SymbolEntry *se;
-        se = new IdentifierSymbolEntry($3, $4, identifiers->getLevel());
+        se = new IdentifierSymbolEntry($3, $4, identifiers->getLevel(), paramCount++);
         identifiers->install($4, se);
 
         FuncFParams *temp = $1;
