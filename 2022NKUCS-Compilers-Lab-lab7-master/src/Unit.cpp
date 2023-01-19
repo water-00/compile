@@ -13,12 +13,12 @@ void Unit::removeFunc(Function *func)
 
 void Unit::genMachineCode(MachineUnit* munit) 
 {
-    std::cout << "out Function::genMachineCode\n";
+    // std::cout << "out Function::genMachineCode\n";
     AsmBuilder* builder = new AsmBuilder();
     builder->setUnit(munit);
     for (auto &func : func_list)
         func->genMachineCode(builder);
-    std::cout << "out Function::genMachineCode\n";
+    // std::cout << "out Function::genMachineCode\n";
 }
 
 Unit::~Unit()

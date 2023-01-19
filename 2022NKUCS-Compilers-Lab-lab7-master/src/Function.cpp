@@ -30,7 +30,7 @@ void Function::remove(BasicBlock *bb)
 
 void Function::genMachineCode(AsmBuilder* builder) 
 {
-    std::cout << "in Function::genMachineCode\n";
+    // std::cout << "in Function::genMachineCode\n";
     auto cur_unit = builder->getUnit();
     auto cur_func = new MachineFunction(cur_unit, this->sym_ptr);
     builder->setFunction(cur_func);
@@ -50,5 +50,5 @@ void Function::genMachineCode(AsmBuilder* builder)
             mblock->addSucc(map[*succ]);
     }
     cur_unit->InsertFunc(cur_func);
-    std::cout << "out Function::genMachineCode\n";
+    // std::cout << "out Function::genMachineCode\n";
 }

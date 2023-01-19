@@ -261,22 +261,22 @@ MachineOperand* Instruction::genMachineOperand(Operand* ope)
     SymbolEntry* se = ope->getEntry();
     MachineOperand* mope = nullptr;
     if(se->isConstant()) {
-        std::cout << "se isConstant\n";
+        // std::cout << "se isConstant\n";
         mope = new MachineOperand(MachineOperand::IMM, dynamic_cast<ConstantSymbolEntry*>(se)->getValue());
     }
     else if(se->isTemporary()) {
-        std::cout << "se isTemporary, label = " << dynamic_cast<TemporarySymbolEntry*>(se)->getLabel() << std::endl;
+        // std::cout << "se isTemporary, label = " << dynamic_cast<TemporarySymbolEntry*>(se)->getLabel() << std::endl;
         mope = new MachineOperand(MachineOperand::VREG, dynamic_cast<TemporarySymbolEntry*>(se)->getLabel());
     }
     else if(se->isVariable())
     {
         auto id_se = dynamic_cast<IdentifierSymbolEntry*>(se);
-        std::cout << "se isVariable, name = " << id_se->getName() << ", scope = " << id_se->getScope() << std::endl;
+        // std::cout << "se isVariable, name = " << id_se->getName() << ", scope = " << id_se->getScope() << std::endl;
         if(id_se->isGlobal())
             mope = new MachineOperand(id_se->toStr().c_str());
         else if(id_se->isParam()){
             if (id_se->getParamNo() < 4) {
-                std::cout << "get here\n\n\n\n\n\n"; // 问题就在这儿，为什么不是一个参数呢
+                // std::cout << "get here\n\n\n\n\n\n"; // 问题就在这儿，为什么不是一个参数呢
                 mope = new MachineOperand(MachineOperand::REG, id_se -> getParamNo());
             }
             else {
@@ -314,7 +314,7 @@ MachineOperand* Instruction::genMachineLabel(int block_no)
 
 void AllocaInstruction::genMachineCode(AsmBuilder* builder)
 {
-    std::cout << "in AllocaInstruction::genMachineCode\n";
+    // std::cout << "in AllocaInstruction::genMachineCode\n";
     /* HINT:
     * Allocate stack space for local variabel
     * Store frame offset in symbol entry */
@@ -325,12 +325,12 @@ void AllocaInstruction::genMachineCode(AsmBuilder* builder)
     }
     int offset = cur_func->AllocSpace(size);
     dynamic_cast<TemporarySymbolEntry*>(operands[0]->getEntry())->setOffset(-offset);
-    std::cout << "out AllocaInstruction::genMachineCode\n";
+    // std::cout << "out AllocaInstruction::genMachineCode\n";
 }
 //增 复制的上面这个
 void AllocaGlobalInstruction::genMachineCode(AsmBuilder* builder)
 {
-    std::cout << "in AllocaGlobalInstruction::genMachineCode\n";
+    // std::cout << "in AllocaGlobalInstruction::genMachineCode\n";
 
     /* HINT:
     * Allocate stack space for local variabel
@@ -348,11 +348,11 @@ void AllocaGlobalInstruction::genMachineCode(AsmBuilder* builder)
     }
     int offset = cur_func->AllocSpace(size);
     dynamic_cast<TemporarySymbolEntry*>(operands[0]->getEntry())->setOffset(-offset);
-    std::cout << "out AllocaGlobalInstruction::genMachineCode\n";
+    // std::cout << "out AllocaGlobalInstruction::genMachineCode\n";
 }
 void LoadInstruction::genMachineCode(AsmBuilder* builder)
 {
-    std::cout << "in LoadInstruction::genMachineCode\n";
+    // std::cout << "in LoadInstruction::genMachineCode\n";
     auto cur_block = builder->getBlock();//获取当前block
     MachineInstruction* cur_inst = nullptr;
     // Load global operand
@@ -397,12 +397,12 @@ void LoadInstruction::genMachineCode(AsmBuilder* builder)
         cur_block->InsertInst(cur_inst);
     }
 
-    std::cout << "out LoadInstruction::genMachineCode\n";
+    // std::cout << "out LoadInstruction::genMachineCode\n";
 }
 
 void StoreInstruction::genMachineCode(AsmBuilder* builder)
 {
-    std::cout << "in StoreInstruction::genMachineCode\n";
+    // std::cout << "in StoreInstruction::genMachineCode\n";
     // TODO 2012679 finish
     auto cur_block = builder->getBlock(); // 获取当前block
     MachineInstruction* cur_inst = nullptr; // 指令
@@ -411,7 +411,7 @@ void StoreInstruction::genMachineCode(AsmBuilder* builder)
     MachineOperand* src = genMachineOperand(operands[1]);
     // 如果把一个常数存起来
     if (operands[1]->getEntry()->isConstant()){
-        std::cout << "immediate\n";
+        // std::cout << "immediate\n";
         //将常量加载到temp中，再到src
         MachineOperand* temp = genMachineVReg();
         cur_inst = new LoadMInstruction(cur_block, temp, src);
@@ -420,7 +420,7 @@ void StoreInstruction::genMachineCode(AsmBuilder* builder)
     }
     // store一个全局变量
     if(operands[0]->getEntry()->isVariable() && dynamic_cast<IdentifierSymbolEntry*>(operands[0]->getEntry())->isGlobal()) {
-        std::cout << "global operand\n";
+        // std::cout << "global operand\n";
         // auto dst = genMachineOperand(operands[0]); // 目的
         auto internal_reg1 = genMachineVReg(); // MachineOperand(MachineOperand::VREG, SymbolTable::getLabel());
         // dst--->internal_reg1
@@ -432,7 +432,7 @@ void StoreInstruction::genMachineCode(AsmBuilder* builder)
     }
     // store栈中的临时变量，t0，t1
     else if(operands[0]->getEntry()->isTemporary() && operands[0]->getDef() && operands[0]->getDef()->isAlloc()){
-        std::cout << "local operand\n";
+        // std::cout << "local operand\n";
         MachineOperand* src1 = genMachineReg(11); // fp register
         // 偏移量
         auto src2 = genMachineImm(dynamic_cast<TemporarySymbolEntry*>(operands[0]->getEntry())->getOffset());
@@ -441,17 +441,17 @@ void StoreInstruction::genMachineCode(AsmBuilder* builder)
     }
     // store 临时变量
     else {
-        std::cout << "store to pointer\n";
+        // std::cout << "store to pointer\n";
         auto dst = genMachineOperand(operands[0]);
         cur_inst = new StoreMInstruction(cur_block, src, dst);
         cur_block->InsertInst(cur_inst);
     }
-    std::cout << "out StoreInstruction::genMachineCode\n";
+    // std::cout << "out StoreInstruction::genMachineCode\n";
 }
 
 void BinaryInstruction::genMachineCode(AsmBuilder* builder)
 {
-    std::cout << "in BinaryInstruction::genMachineCode\n";
+    // std::cout << "in BinaryInstruction::genMachineCode\n";
     // TODO: 
     //copy by GitHub
     // complete other instructions
@@ -518,13 +518,13 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder)
     }
     cur_block->InsertInst(cur_inst);
     
-    std::cout << "out BinaryInstruction::genMachineCode\n";
+    // std::cout << "out BinaryInstruction::genMachineCode\n";
 
 }
 
 void CmpInstruction::genMachineCode(AsmBuilder* builder)
 {
-    std::cout << "in CmpInstruction::genMachineCode\n";
+    // std::cout << "in CmpInstruction::genMachineCode\n";
     // TODO 2012679 finish
     MachineBlock* cur_block = builder->getBlock();//获取当前block
     MachineInstruction* cur_inst = nullptr;
@@ -595,13 +595,13 @@ void CmpInstruction::genMachineCode(AsmBuilder* builder)
         cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst, false_Operand, LE);
         cur_block->InsertInst(cur_inst);
     }
-    std::cout << "out CmpInstruction::genMachineCode\n";
+    // std::cout << "out CmpInstruction::genMachineCode\n";
 
 }
 
 void UncondBrInstruction::genMachineCode(AsmBuilder* builder)
 {
-    std::cout << "in UncondBrInstruction::genMachineCode\n";
+    // std::cout << "in UncondBrInstruction::genMachineCode\n";
     // TODO 2012679 finish
     /*对于 UncondBrInstruction，同学们只需要生成一条无条件跳转指令即可*/
     MachineBlock *cur_block = builder->getBlock();//获取当前block
@@ -610,12 +610,12 @@ void UncondBrInstruction::genMachineCode(AsmBuilder* builder)
     BranchMInstruction* cur_inst = new BranchMInstruction(cur_block, BranchMInstruction::B, dst);
 
     cur_block->InsertInst(cur_inst);
-    std::cout << "out UncondBrInstruction::genMachineCode\n";
+    // std::cout << "out UncondBrInstruction::genMachineCode\n";
 }
 
 void CondBrInstruction::genMachineCode(AsmBuilder* builder)
 {
-    std::cout << "in CondBrInstruction::genMachineCode\n";
+    // std::cout << "in CondBrInstruction::genMachineCode\n";
     // TODO 2012679 finish
     /*对于CondBrInstruction，首先明确在中间代码中该指令一定位于CmpInstruction之后，
     对CmpInstruction 的翻译比较简单，相信大家都能完成。对 CondBrInstruction，
@@ -638,13 +638,13 @@ void CondBrInstruction::genMachineCode(AsmBuilder* builder)
     //两条指令的dst是不一样的
     cur_inst = new BranchMInstruction(cur_block, BranchMInstruction::B, dst_false);
     cur_block->InsertInst(cur_inst);
-    std::cout << "out CondBrInstruction::genMachineCode\n";
+    // std::cout << "out CondBrInstruction::genMachineCode\n";
 
 }
 
 void RetInstruction::genMachineCode(AsmBuilder* builder)
 {
-    std::cout << "in RetInstruction::genMachineCode\n";
+    // std::cout << "in RetInstruction::genMachineCode\n";
     // TODO 2012679 finish
     /* HINT:
     * 1. Generate mov instruction to save return value in r0
@@ -717,12 +717,12 @@ void RetInstruction::genMachineCode(AsmBuilder* builder)
     MachineOperand *lr = new MachineOperand(MachineOperand::REG, 14);
     cur_inst = new BranchMInstruction(cur_block, BranchMInstruction::BX, lr);
     cur_block->InsertInst(cur_inst);
-    std::cout << "out RetInstruction::genMachineCode\n";
+    // std::cout << "out RetInstruction::genMachineCode\n";
 }
 //增
 void CallInstruction::genMachineCode(AsmBuilder* builder) 
 {
-    std::cout << "in CallInstruction::genMachineCode\n";
+    // std::cout << "in CallInstruction::genMachineCode\n";
     auto cur_block = builder->getBlock();
     MachineOperand* operand;  
     MachineInstruction* cur_inst;
@@ -768,28 +768,28 @@ void CallInstruction::genMachineCode(AsmBuilder* builder)
         cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, genMachineOperand(dst), new MachineOperand(MachineOperand::REG, 0));
         cur_block->InsertInst(cur_inst);
     }
-    std::cout << "out CallInstruction::genMachineCode\n";
+    // std::cout << "out CallInstruction::genMachineCode\n";
 }
 
 void ZextInstruction::genMachineCode(AsmBuilder* builder) 
 {
-    std::cout << "in ZextInstruction::genMachineCode\n";
+    // std::cout << "in ZextInstruction::genMachineCode\n";
     auto cur_block = builder->getBlock();
     auto dst = genMachineOperand(operands[0]);
     auto src = genMachineOperand(operands[1]);
     auto cur_inst =new MovMInstruction(cur_block, MovMInstruction::MOV, dst, src);
     cur_block->InsertInst(cur_inst);
-    std::cout << "out ZextInstruction::genMachineCode\n";
+    // std::cout << "out ZextInstruction::genMachineCode\n";
 }
 
 void XorInstruction::genMachineCode(AsmBuilder* builder) 
 {
-    std::cout << "in XorInstruction::genMachineCode\n";
+    // std::cout << "in XorInstruction::genMachineCode\n";
     MachineBlock *cur_block = builder->getBlock();
     MovMInstruction *cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, genMachineOperand(operands[0]), genMachineImm(1), MachineInstruction::EQ);
     cur_block->InsertInst(cur_inst);
     cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, genMachineOperand(operands[0]), genMachineImm(0), MachineInstruction::NE);
     cur_block->InsertInst(cur_inst);
-    std::cout << "out XorInstruction::genMachineCode\n";
+    // std::cout << "out XorInstruction::genMachineCode\n";
 }
 

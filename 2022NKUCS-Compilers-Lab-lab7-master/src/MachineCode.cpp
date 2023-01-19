@@ -78,7 +78,7 @@ void MachineOperand::output()
             fprintf(yyout, "#%d", this->val);
             break;
         case VREG:
-            std::cout  << "v" << this->reg_no << std::endl;
+            // std::cout  << "v" << this->reg_no << std::endl;
             fprintf(yyout, "v%d", this->reg_no);
             break;
         case REG:

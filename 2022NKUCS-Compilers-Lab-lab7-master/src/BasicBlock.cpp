@@ -61,7 +61,7 @@ void BasicBlock::removePred(BasicBlock *bb)
 
 void BasicBlock::genMachineCode(AsmBuilder* builder) 
 {
-    std::cout << "\nin BasicBlock::genMachineCode\n";
+    // std::cout << "\nin BasicBlock::genMachineCode\n";
     auto cur_func = builder->getFunction();
     auto cur_block = new MachineBlock(cur_func, no);
     builder->setBlock(cur_block);
@@ -70,7 +70,7 @@ void BasicBlock::genMachineCode(AsmBuilder* builder)
         i->genMachineCode(builder);
     }
     cur_func->InsertBlock(cur_block);
-    std::cout << "out BasicBlock::genMachineCode\n";
+    // std::cout << "out BasicBlock::genMachineCode\n";
 }
 
 BasicBlock::BasicBlock(Function *f)

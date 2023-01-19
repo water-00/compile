@@ -49,15 +49,15 @@ std::vector<Instruction*> Node::merge(std::vector<Instruction*> &list1, std::vec
 
 void Ast::genCode(Unit *unit)
 {
-    std::cout  << "in Ast::genCode(Unit *unit)" << std::endl;
+    // std::cout  << "in Ast::genCode(Unit *unit)" << std::endl;
     IRBuilder *builder = new IRBuilder(unit);
     Node::setIRBuilder(builder);
     root->genCode();
-    std::cout  << "out Ast::genCode(Unit *unit)" << std::endl;
+    // std::cout  << "out Ast::genCode(Unit *unit)" << std::endl;
 }
 
 void UnaryExpr::genCode() {
-    std::cout  << "in UnaryExpr::genCode()" << std::endl;
+    // std::cout  << "in UnaryExpr::genCode()" << std::endl;
     // 思路：
     // 1. 对于+ -，生成一个二元表达式，与0做运算，通过运算符转换expr的值即可
     // 2. 对于!，生成icmp，与0比较，把expr转换为比较的结果即可
@@ -92,12 +92,12 @@ void UnaryExpr::genCode() {
         new XorInstruction(dst, src, bb);
     }
 
-    std::cout  << "out UnaryExpr::genCode()" << std::endl;
+    // std::cout  << "out UnaryExpr::genCode()" << std::endl;
 }
 
 void BinaryExpr::genCode()
 {
-    std::cout  << "in BinaryExpr::genCode()" << std::endl;
+    // std::cout  << "in BinaryExpr::genCode()" << std::endl;
     BasicBlock *bb = builder->getInsertBB();
     Function *func = bb->getParent();
     if (op == AND)
@@ -143,14 +143,14 @@ void BinaryExpr::genCode()
         Operand *src2 = expr2->getOperand();
         if (src1->getType()->getSize() == 1) 
         {
-            std::cout << "src1->getType()->getSize() == 1\n";
+            // std::cout << "src1->getType()->getSize() == 1\n";
             Operand* dst = new Operand(new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel()));
             new ZextInstruction(dst, src1, bb);
             src1 = dst;
         }
         if (src2->getType()->getSize() == 1) 
         {
-            std::cout << "src2->getType()->getSize() == 1\n";
+            // std::cout << "src2->getType()->getSize() == 1\n";
             Operand* dst = new Operand(new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel()));
             new ZextInstruction(dst, src2, bb);
             src2 = dst;
@@ -181,7 +181,7 @@ void BinaryExpr::genCode()
             break;
         }
         new CmpInstruction(opcode, dst, src1, src2, bb);
-        std::cout << "op = " << opcode << "\n";
+        // std::cout << "op = " << opcode << "\n";
         // 添加到truelist和falselist
         true_list = merge(expr1->trueList(), expr2->trueList());
         false_list = merge(expr1->falseList(), expr2->falseList());
@@ -220,12 +220,12 @@ void BinaryExpr::genCode()
         }
         new BinaryInstruction(opcode, dst, src1, src2, bb);
     }
-    std::cout  << "out BinaryExpr::genCode()" << std::endl;
+    // std::cout  << "out BinaryExpr::genCode()" << std::endl;
 }
 
 void IfStmt::genCode()
 {
-    std::cout << "in IfStmt::genCode()\n";
+    // std::cout << "in IfStmt::genCode()\n";
     Function *func;
     BasicBlock *then_bb, *end_bb;
 
@@ -247,7 +247,7 @@ void IfStmt::genCode()
     // 那么需要将cond与0比较后再跳转
 
     if (!cond->getOperand()->getType()->isBool()) {
-        std::cout << "这不是一个bool" << std::endl;
+        // std::cout << "这不是一个bool" << std::endl;
         BasicBlock *bb = builder->getInsertBB();
 
         // 生成0
@@ -278,12 +278,12 @@ void IfStmt::genCode()
     new UncondBrInstruction(end_bb, then_bb); // 在then_bb块的结束，要生成一条跳转到end_bb块的指令
 
     builder->setInsertBB(end_bb);
-    std::cout << "out IfStmt::genCode()\n";
+    // std::cout << "out IfStmt::genCode()\n";
 }
 
 void IfElseStmt::genCode()
 {
-    std::cout << "in IfElseStmt::genCode()\n";
+    // std::cout << "in IfElseStmt::genCode()\n";
     // Todo
     Function *func;
     BasicBlock *then_bb, *else_bb, *end_bb;
@@ -307,7 +307,7 @@ void IfElseStmt::genCode()
    
     // TODO: 还需要判断，如果cond不是一个bool类型
     if (!cond->getOperand()->getType()->isBool()) {
-        std::cout << "这不是一个bool" << std::endl;
+        // std::cout << "这不是一个bool" << std::endl;
         BasicBlock *bb = builder->getInsertBB();
 
         // 生成0
@@ -339,7 +339,7 @@ void IfElseStmt::genCode()
     //存在if else 语句结束，函数也结束的情况，那么此时end_bb是空白的，yacc它不能识别空白
     //但是then_bb else_bb却都有个跳到end_bb的指令（此时end_bb不存在，没法跳转） ，导致错误
     // if(!end_bb->empty()){
-        std::cout << "!end_bb\n";
+        // std::cout << "!end_bb\n";
         new UncondBrInstruction(end_bb, then_bb); // 在then_bb块的结束，我要生成一条跳转到end_bb块的指令
     // }
     builder->setInsertBB(else_bb);
@@ -347,15 +347,15 @@ void IfElseStmt::genCode()
     else_bb = builder->getInsertBB();
     //2012679 增加一个end_bb是否为空的判断
     // if(!end_bb->empty()){
-        std::cout << "!end_bb\n" << end_bb->getNo() << "\n";
+        // std::cout << "!end_bb\n" << end_bb->getNo() << "\n";
         new UncondBrInstruction(end_bb, else_bb); // 在else_bb块的结束，我要生成一条跳转到end_bb块的指令
     // }
     builder->setInsertBB(end_bb);
-    std::cout << "out IfElseStmt::genCode()\n";
+    // std::cout << "out IfElseStmt::genCode()\n";
 }
 
 void WhileStmt::genCode() {
-    std::cout << "in WhileStmt::genCode()\n";
+    // std::cout << "in WhileStmt::genCode()\n";
     Function *func;
     BasicBlock *loop_bb, *end_bb, *cond_bb;
 
@@ -382,7 +382,7 @@ void WhileStmt::genCode() {
 
     // 如果传入的不是bool类型，同if，把cond拿去和0比较
     if (!cond->getOperand()->getType()->isBool()) {
-        std::cout << "这不是一个bool" << std::endl;
+        // std::cout << "这不是一个bool" << std::endl;
         BasicBlock *bb = cond->builder->getInsertBB();
 
         // 生成0
@@ -414,52 +414,52 @@ void WhileStmt::genCode() {
 
     builder->setInsertBB(end_bb);
 
-    std::cout << "out WhileStmt::genCode()\n";
+    // std::cout << "out WhileStmt::genCode()\n";
 }
 
 void Constant::genCode()
 {
     // we don't need to generate code.
 
-    std::cout  << "in Constant::genCode()" << std::endl;
+    // std::cout  << "in Constant::genCode()" << std::endl;
 
-    std::cout  << "out Constant::genCode()" << std::endl;
+    // std::cout  << "out Constant::genCode()" << std::endl;
 
 }
 
 void Id::genCode()
 {
-    std::cout  << "in Id::genCode()" << std::endl;
+    // std::cout  << "in Id::genCode()" << std::endl;
     BasicBlock *bb = builder->getInsertBB();
     Operand *addr = dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getAddr();
     new LoadInstruction(dst, addr, bb);
-    std::cout  << "out Id::genCode()" << std::endl;
+    // std::cout  << "out Id::genCode()" << std::endl;
 }
 
 void ConstId::genCode(){
-    std::cout  << "in ConstId::genCode()" << std::endl;
+    // std::cout  << "in ConstId::genCode()" << std::endl;
 
-    std::cout  << "out ConstId::genCode()" << std::endl;
+    // std::cout  << "out ConstId::genCode()" << std::endl;
 }
 
 void CompoundStmt::genCode()
 {
-    std::cout  << "in CompoundStmt::genCode()" << std::endl;
+    // std::cout  << "in CompoundStmt::genCode()" << std::endl;
     stmt->genCode();
-    std::cout  << "out CompoundStmt::genCode()" << std::endl;
+    // std::cout  << "out CompoundStmt::genCode()" << std::endl;
 }
 
 void SeqNode::genCode()
 {
-    std::cout  << "in SeqNode::genCode()" << std::endl;
+    // std::cout  << "in SeqNode::genCode()" << std::endl;
     stmt1->genCode();
     stmt2->genCode();
-    std::cout  << "out SeqNode::genCode()" << std::endl;
+    // std::cout  << "out SeqNode::genCode()" << std::endl;
 }
 
 void DeclStmt::genCode()
 {
-    std::cout << "in DeclStmt::genCode()\n";
+    // std::cout << "in DeclStmt::genCode()\n";
     for (auto id : ids->idlist) {
         IdentifierSymbolEntry *se = dynamic_cast<IdentifierSymbolEntry *>(id->getSymPtr());
         if(se->isGlobal())
@@ -532,11 +532,11 @@ void DeclStmt::genCode()
             }
         }
     }
-    std::cout << "out DeclStmt::genCode()\n";
+    // std::cout << "out DeclStmt::genCode()\n";
 }
 
 void ConstDeclStmt::genCode() {
-    std::cout << "in ConstDeclStmt::genCode()\n";
+    // std::cout << "in ConstDeclStmt::genCode()\n";
     int index = 0;
     for (auto cid : cids->conidlist) {
         // 对于const变量，方便的是idList和assignList中每一项对应，不用再用循环去通过id找assign了
@@ -583,23 +583,23 @@ void ConstDeclStmt::genCode() {
         }
         index++;
     }
-    std::cout << "out ConstDeclStmt::genCode()\n";
+    // std::cout << "out ConstDeclStmt::genCode()\n";
 }
 
 void ReturnStmt::genCode()
 {
-    std::cout  << "in ReturnStmt::genCode()" << std::endl;
+    // std::cout  << "in ReturnStmt::genCode()" << std::endl;
     // Todo
     BasicBlock *bb = builder->getInsertBB();
     retValue->genCode();
     Operand *src = retValue->getOperand();
     new RetInstruction(src, bb);
-    std::cout  << "out ReturnStmt::genCode()" << std::endl;
+    // std::cout  << "out ReturnStmt::genCode()" << std::endl;
 }
 
 void AssignStmt::genCode()
 {
-    std::cout << "in AssignStmt::genCode()\n";
+    // std::cout << "in AssignStmt::genCode()\n";
     BasicBlock *bb = builder->getInsertBB();
     expr->genCode();
     Operand *addr = dynamic_cast<IdentifierSymbolEntry*>(lval->getSymPtr())->getAddr();
@@ -609,24 +609,24 @@ void AssignStmt::genCode()
      * If you want to implement array, you have to caculate the address first and then store the result into it.
      */
     new StoreInstruction(addr, src, bb);
-    std::cout << "out AssignStmt::genCode()\n";
+    // std::cout << "out AssignStmt::genCode()\n";
 }
 
 void IdList::genCode() {
-    std::cout << "in IdList::genCode()\n";
+    // std::cout << "in IdList::genCode()\n";
 
-    std::cout << "out IdList::genCode()\n";
+    // std::cout << "out IdList::genCode()\n";
 }
 
 void ConIdList::genCode() {
-    std::cout << "in ConIdList::genCode()\n";
+    // std::cout << "in ConIdList::genCode()\n";
 
-    std::cout << "out ConIdList::genCode()\n";
+    // std::cout << "out ConIdList::genCode()\n";
 }
 
 void FunctionDef::genCode()
 {
-    std::cout  << "\nin FunctionDef::genCode()" << std::endl;
+    // std::cout  << "\nin FunctionDef::genCode()" << std::endl;
     Unit *unit = builder->getUnit();
     Function *func = new Function(unit, se);
     BasicBlock *entry = func->getEntry(); // 入口
@@ -693,25 +693,25 @@ void FunctionDef::genCode()
 
 
    
-    std::cout  << "out FunctionDef::genCode()" << std::endl;
+    // std::cout  << "out FunctionDef::genCode()" << std::endl;
 }
 
 void FuncFParam::genCode(){ // 函数形参
-    std::cout << "in FuncFParam::genCode()\n";
+    // std::cout << "in FuncFParam::genCode()\n";
     // 把值从内存加载到参数变量中
     BasicBlock *bb = builder->getInsertBB();
     Operand *addr = dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getAddr();
     new LoadInstruction(dst, addr, bb);
-    std::cout << "out FuncFParam::genCode()\n";
+    // std::cout << "out FuncFParam::genCode()\n";
 }
 
 void FuncFParams::genCode() { // 函数形参列表
-    std::cout << "in FuncFParams::genCode()\n";
+    // std::cout << "in FuncFParams::genCode()\n";
     for (long unsigned int i = 0; i < FPs.size(); i++) {
 
         IdentifierSymbolEntry *se = dynamic_cast<IdentifierSymbolEntry *>(FPs[i]->getSymPtr());
-        std::cout << "kind: " << se->getKind() << std::endl; // 1, VARIABLE
-        std::cout << "scope: " << se->getScope() << std::endl; // 1, PARAM
+        // std::cout << "kind: " << se->getKind() << std::endl; // 1, VARIABLE
+        // std::cout << "scope: " << se->getScope() << std::endl; // 1, PARAM
 
 
         Function *func = builder->getInsertBB()->getParent();
@@ -724,8 +724,6 @@ void FuncFParams::genCode() { // 函数形参列表
         Operand *addr1 = new Operand(addr_se1);
         Operand *addr2 = new Operand(FPs[i]->getSymPtr());
 
-        SymbolEntry *se1 = addr1->getSe();
-        std::cout << "addr1 kind: " << se1->getKind() << std::endl;
 
         BasicBlock *entry = func->getEntry();
         AllocaInstruction *alloca = new AllocaInstruction(addr1, se);
@@ -739,18 +737,18 @@ void FuncFParams::genCode() { // 函数形参列表
         func->getParams().push_back(addr2);
 
     }
-    std::cout << "out FuncFParams::genCode()\n";
+    // std::cout << "out FuncFParams::genCode()\n";
 }
 
 void FuncRParams::genCode() { // 函数实参列表
     // do nothing
-    std::cout << "in FuncRParams::genCode()\n";
+    // std::cout << "in FuncRParams::genCode()\n";
 
-    std::cout << "out FuncRParams::genCode()\n";
+    // std::cout << "out FuncRParams::genCode()\n";
 }
 
 void FunctionCall::genCode() {
-    std::cout << "in FunctionCall::genCode()\n";
+    // std::cout << "in FunctionCall::genCode()\n";
     std::vector<Operand*> params;
 
     if (RPs != nullptr) {
@@ -772,20 +770,20 @@ void FunctionCall::genCode() {
     CallInstruction *call = new CallInstruction(dst, symbolEntry, params);
     entry->insertBack(call);
 
-    std::cout << "out FunctionCall::genCode()\n";
+    // std::cout << "out FunctionCall::genCode()\n";
 }
 
 
 void Empty::genCode() {
-    std::cout << "in Empty::genCode()\n";
+    // std::cout << "in Empty::genCode()\n";
 
-    std::cout << "out Empty::genCode()\n";
+    // std::cout << "out Empty::genCode()\n";
 }
 
 void SingleStmt::genCode() {
-    std::cout << "in SingleStmt::genCode()\n";
+    // std::cout << "in SingleStmt::genCode()\n";
     expr->genCode();
-    std::cout << "out SingleStmt::genCode()\n";
+    // std::cout << "out SingleStmt::genCode()\n";
 }
 
 
